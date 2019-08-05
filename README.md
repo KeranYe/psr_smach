@@ -15,3 +15,7 @@ http://wiki.ros.org/actionlib/Tutorials
 - smach:
 
 http://wiki.ros.org/smach/Tutorials
+
+## Tips on Actionlib
+
+-1. When constructing server and client, make sure they referres to the same server name.
