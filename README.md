@@ -23,3 +23,4 @@ http://wiki.ros.org/smach/Tutorials
 - The return type of `acceptNewGoal()` is boost::shared_ptr<const psr_smach::PSRGoal_<std::allocator<void> > >.
 
 - `acceptNewGoal()` can be used for only one time whenever goal callback function is called.
+
