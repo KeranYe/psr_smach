@@ -49,12 +49,14 @@ protected:
 	std::string action_name_;
 	psr_smach::PSRFeedback feedback_;
 	psr_smach::PSRResult result_;
+	//psr_smach::PSRGoal goal_;
 	ros::Subscriber sub_;
 	ros::Publisher pub_;
 
 	geometry_msgs::Twist psr_msg;
-		
-	struct Goal goal_;
+	
+	boost::shared_ptr<const psr_smach::PSRGoal_<std::allocator<void> > > goal_;	
+	//struct Goal goal_;
 	struct State state_;
 	struct ModelParameter model_para_;
 	float Rs; // Steering radius, unit = m
@@ -77,13 +79,16 @@ public:
 		//subscribe to the data topic of interest
 		sub_ = nh_.subscribe("/PSR/sensors", 1, &PSRAction::algorithmCB, this); // In topic /PSR/sensors, a self-defined msg type will be applied, namely psr_msgs.  For test, try std_msgs::FLoat32
 		pub_ = nh_.advertise<geometry_msgs::Twist>("/PSR/motors", 1);
+		ROS_INFO("Start Server!!!");
 		as_.start();
-
+		ROS_INFO("Server has been started!!!");
+/*
 		// Algorithm
 		while(ros::ok())
 		{
 			
 		}
+*/
 	}
 
 	~PSRAction(void)
@@ -92,13 +97,15 @@ public:
 
 	void goalCB()
 	{
-		ROS_INFO("Goal received!!!");		
+		//ROS_INFO("Goal received!!!");		
 		// accept the new goal
-		goal_.duration = as_.acceptNewGoal()->duration;
-		// strcpy(goal_.steer_direction, as_.acceptNewGoal()->steer_direction);
-		goal_.Wc = as_.acceptNewGoal()->angular_speed;
-		goal_.Vc = as_.acceptNewGoal()->linear_speed;
-		Rs = goal_.Vc / goal_.Wc; // unit = m
+		goal_ = as_.acceptNewGoal();
+		ROS_INFO("Goal received!!! Duration = %f, Wc = %f, Vc = %f", goal_->duration, goal_->angular_speed, goal_->linear_speed);	
+		//goal_->duration = as_.acceptNewGoal()->duration;
+		// strcpy(goal_->steer_direction, as_.acceptNewGoal()->steer_direction);
+		//goal_->angular_speed = as_.acceptNewGoal()->angular_speed;
+		//goal_->linear_speed = as_.acceptNewGoal()->linear_speed;
+		Rs = goal_->linear_speed / goal_->angular_speed; // unit = m
 
 		// reset model parameters
 		model_para_.Rw = 0.06; // unit = m
@@ -106,8 +113,8 @@ public:
 		model_para_.theta = 0; // unit = m
 
 		// reset state variables
-		state_.linear_speed = goal_.Vc; // unit = m/s
-		state_.angular_speed = goal_.Wc; // unit = rad/s
+		state_.linear_speed = goal_->linear_speed; // unit = m/s
+		state_.angular_speed = goal_->angular_speed; // unit = rad/s
 		state_.angular_acceleration_right = 0.0; // unit = rad/(s^2)
 		state_.angular_speed_left = 0.0; // unit = rad/s
 		state_.angular_speed_right = 0.0; // unit = rad/s
@@ -129,16 +136,17 @@ public:
 
 	void algorithmCB(const std_msgs::Float32::ConstPtr& sensor)
 	{
-		ROS_INFO("Theta = %f", sensor);		
+		//ROS_INFO("Theta = %f", sensor);		
 		// make sure that the action hasn't been canceled
 		if (!as_.isActive())
 		return;
-	
+		
+		ROS_INFO("Theta = %f", sensor);	
 		// Algorithm
 
 		// Compute left and right angular speeds
-		state_.angular_speed_left = (1-(model_para_.width/(2.0*Rs)))*(goal_.Vc/model_para_.Rw);
-		state_.angular_speed_right = (1+(model_para_.width/(2.0*Rs)))*(goal_.Vc/model_para_.Rw);
+		state_.angular_speed_left = (1-(model_para_.width/(2.0*Rs)))*(goal_->linear_speed/model_para_.Rw);
+		state_.angular_speed_right = (1+(model_para_.width/(2.0*Rs)))*(goal_->linear_speed/model_para_.Rw);
 		
 		// Publish them
 		psr_msg.linear.x = state_.wheel_angle_left;
@@ -157,7 +165,7 @@ public:
 		elapsed_time = current_time - initial_time;
 		ROS_INFO("Initial time = %f, Elapsed time = %f", initial_time, elapsed_time);	
 	
-		if(elapsed_time >= goal_.duration){
+		if(elapsed_time >= goal_->duration){
 			result_.completed = true;
 			result_.angular_speed = state_.angular_speed;
 			result_.linear_speed = state_.linear_speed;
@@ -184,7 +192,7 @@ public:
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "psr_server_type1");
+  ros::init(argc, argv, "psr_type1");
 
   PSRAction psr_go(ros::this_node::getName());
   ros::spin();

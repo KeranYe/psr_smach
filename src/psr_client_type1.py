@@ -13,17 +13,19 @@ import psr_smach.msg
 def psr_client():
     # Creates the SimpleActionClient, passing the type of the action
     # (FibonacciAction) to the constructor.
-    client = actionlib.SimpleActionClient('psr', psr_smach.msg.PSRAction)
+    client = actionlib.SimpleActionClient('psr_type1', psr_smach.msg.PSRAction)
 
     # Waits until the action server has started up and started
     # listening for goals.
     client.wait_for_server()
+    rospy.loginfo('Server connected!!')
 
     # Creates a goal to send to the action server.
-    goal = psr_smach.msg.PSRGoal(duration=5.0, angular_speed=1.0, linear_speed=1.0)
+    goal = psr_smach.msg.PSRGoal(duration=5.0, angular_speed=0.5, linear_speed=1.0)
 
     # Sends the goal to the action server.
     client.send_goal(goal)
+    rospy.loginfo('Goal sent!!')
 
     # Waits for the server to finish performing the action.
     client.wait_for_result()
