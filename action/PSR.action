@@ -1,15 +1,14 @@
 #goal definition
 float32 duration
-string steer_direction
-float32 steer_radius
+float32 angular_speed
 float32 linear_speed
 ---
 #result definition
 bool completed
-float32 std_dev
----
-#feedback
-time current_time
-float32 duty_left
-float32 duty_right
+float32 angular_speed
 float32 linear_speed
+---
+#feedback definition
+time current_time
+float32 angular_speed_left
+float32 angular_speed_right
