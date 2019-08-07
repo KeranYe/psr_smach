@@ -1,5 +1,5 @@
 #goal definition
-float32 duration
+float64 duration
 float32 angular_speed
 float32 linear_speed
 ---
@@ -9,6 +9,6 @@ float32 angular_speed
 float32 linear_speed
 ---
 #feedback definition
-time current_time
+float64 current_time
 float32 angular_speed_left
 float32 angular_speed_right

@@ -6,7 +6,7 @@ import rospy
 # Brings in the SimpleActionClient
 import actionlib
 
-# Brings in the messages used by the fibonacci action, including the
+# Brings in the messages used by the PSR action, including the
 # goal message and the result message.
 import psr_smach.msg
 
@@ -31,7 +31,7 @@ def psr_client():
     client.wait_for_result()
 
     # Prints out the result of executing the action
-    return client.get_result()  # A FibonacciResult
+    return client.get_result()  # A PSRResult
 
 if __name__ == '__main__':
     try:

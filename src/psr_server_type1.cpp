@@ -11,7 +11,7 @@
 
 // Define struct 'Goal', 'State', and 'ModelParameter'
 struct Goal{
-	float duration; // unit = s
+	double duration; // unit = s
 	//std::string steer_direction; // "left" or "right"
 	float Wc; //angular speed of CoM, unit = rad/s
 	float Vc; //linear speed of CoM, unit = m/s
@@ -61,9 +61,9 @@ protected:
 	struct ModelParameter model_para_;
 	float Rs; // Steering radius, unit = m
 	
-	float initial_time; // unit = s
-	float current_time; // unit = s
-	float elapsed_time; // unit = s
+	double initial_time; // unit = s
+	double current_time; // unit = s
+	double elapsed_time; // unit = s
 
 
 public:
@@ -122,7 +122,7 @@ public:
 		state_.wheel_angle_right = 0.0; // unit = rad
 		
 		// reset initial time
-		initial_time = ros::Time::now().toSec();
+		initial_time = ros::WallTime::now().toSec();
 		current_time = initial_time;
 		elapsed_time = 0.0;
 	}
@@ -141,7 +141,7 @@ public:
 		if (!as_.isActive())
 		return;
 		
-		ROS_INFO("Theta = %f", sensor);	
+		ROS_INFO("Theta = %f", sensor->data);	
 		// Algorithm
 
 		// Compute left and right angular speeds
@@ -155,15 +155,15 @@ public:
 		psr_msg.angular.y = state_.angular_speed_right;
 		pub_.publish(psr_msg);
 		
-		feedback_.current_time = ros::Time::now();
+		feedback_.current_time = elapsed_time;
 		feedback_.angular_speed_left = state_.angular_speed_left;
 		feedback_.angular_speed_right = state_.angular_speed_right;
 		as_.publishFeedback(feedback_);
 
 		// Check action process		
-		current_time = ros::Time::now().toSec();
+		current_time = ros::WallTime::now().toSec();
 		elapsed_time = current_time - initial_time;
-		ROS_INFO("Initial time = %f, Elapsed time = %f", initial_time, elapsed_time);	
+		ROS_INFO("Elapsed time = %f", elapsed_time);	
 	
 		if(elapsed_time >= goal_->duration){
 			result_.completed = true;
