@@ -23,6 +23,11 @@ duration = 0.0
 angular_velocity_des = 0.0
 linear_velocity_des = 0.0
 
+if_collect_data = False # Flag for collecting data
+if_start_client = False # Flag for starting data
+
+psr_data = []
+
 posture = 'sprawl'
 direction = 'right'
 speed = 'slow'
@@ -39,7 +44,14 @@ class Idle(smach.State):
 		self.if_shutdown = 'y'
     
 	def execute(self, userdata):
+		global if_collect_data, if_start_client
+
 		rospy.loginfo('Executing state: Idle')
+
+		# Reset flags
+		if_collect_data = False # Flag for collecting data
+		if_start_client = False # Flag for starting data
+		
 		while True:
 			self.if_shutdown = raw_input("Shutdown State Machine?(y or n): ")
 
@@ -91,6 +103,12 @@ class PSR_client(smach.State):
 		self.if_shutdown = 'y'
     
 	def psr_client(self):
+		global if_collect_data, if_start_client
+		
+		# Wait till client sends out a goal message
+		while not if_start_client:
+			pass
+		
 		# Creates the SimpleActionClient, passing the type of the action
 		# (PSRAction) to the constructor.
 		self.client = actionlib.SimpleActionClient('psr_type1', psr_smach.msg.PSRAction)
@@ -102,6 +120,9 @@ class PSR_client(smach.State):
 
 		# Creates a goal to send to the action server.
 		self.goal = psr_smach.msg.PSRGoal(duration=duration, angular_speed=angular_velocity_des, linear_speed=linear_velocity_des)
+		
+		# Set flag to start collecting data
+		if_collect_data = True
 
 		# Sends the goal to the action server.
 		self.client.send_goal(self.goal)
@@ -110,6 +131,9 @@ class PSR_client(smach.State):
 		# Waits for the server to finish performing the action.
 		self.client.wait_for_result()
 
+		# Set flag to stop collecting data
+		if_collect_data = False
+
 		# Prints out the result of executing the action
 		return self.client.get_result()  # A PSRResult
 
@@ -117,44 +141,110 @@ class PSR_client(smach.State):
 		rospy.loginfo('Executing state: PSR_client')
 		
 		self.result = self.psr_client()
-		print("Action Succeed!")
+		rospy.loginfo("Action Succeed!")
 		
 		return 'Completed'
 
 ####################################################################################################################
-"""
+# define state 'Data_collect'
+class Data_collect(smach.State):
+	def __init__(self):
+		smach.State.__init__(self,
+				     outcomes=['Completed'])
+		self.subscriber = rospy.Subscriber('/vicon/PSR/PSR', TransformStamped, self.callback)
+		
+    
+	def callback(self, data):
+		# Retrieve data from message
+		self.vicon_data = []
+		self.vicon_data.append(data.header.seq)
+		self.vicon_data.append(data.header.stamp.secs)
+		self.vicon_data.append(data.header.stamp.nsecs)
+		self.vicon_data.append(data.header.frame_id)
+		self.vicon_data.append(data.child_frame_id)
+		self.vicon_data.append(data.transform.translation.x)
+		self.vicon_data.append(data.transform.translation.y)
+		self.vicon_data.append(data.transform.translation.z)
+		self.vicon_data.append(data.transform.rotation.x)
+		self.vicon_data.append(data.transform.rotation.y)
+		self.vicon_data.append(data.transform.rotation.z)
+		self.vicon_data.append(data.transform.rotation.w)
+
+	def execute(self, userdata):
+		global if_collect_data, if_start_client, duration, angular_velocity_des, linear_velocity_des, psr_data
+		
+		rospy.loginfo('Executing state: Data_collect')
+		
+		# Record test info
+        	self.Test_Info = []
+        	self.Test_Info.append(str(datetime.datetime.now()))
+        	self.Test_Info.append('Running Time: ')
+		self.Test_Info.append(duration)
+		self.Test_Info.append('Desired linear velocity: ')
+        	self.Test_Info.append(linear_velocity_des)
+		self.Test_Info.append('Desired angular velocity: ')
+        	self.Test_Info.append(angular_velocity_des)
+		
+		#psr_data = []
+        	psr_data.append(self.Test_Info)
+		
+		# Set flag to start client
+		if_start_client = True
+		
+		# Wait till client sends out a goal message
+		while not if_collect_data:
+			pass
+		
+		rospy.loginfo('Collect Data!')
+		# Collect data!		
+		self.rate = rospy.Rate(100)
+		while if_collect_data:
+			psr_data.append(self.vicon_data)
+			rospy.loginfo(self.vicon_data[5])
+			self.rate.sleep()
+		
+		#userdata.psr_data_out = self.psr_data
+		
+		return 'Completed'
+
+####################################################################################################################
 # define state SaveData
-class SaveData(smach.State):
-    def __init__(self):
-        smach.State.__init__(self,
-                             outcomes=['GoToIdle'],
-                             input_keys=['psr_data_in'])
+class Save_Data(smach.State):
+	def __init__(self):
+		smach.State.__init__(self,
+				     outcomes=['Done'])
 
-    def execute(self, userdata):
-        rospy.loginfo('Saving Data now!')
-	# Define file path
-#	self.spring_coeff = raw_input("Spring Coeffient: ")
-#	self.mount_pos = raw_input("Spring Mounting Position: ")
-#	self.fixed_posture = raw_input("Fixed Posture(upright or sprawl): ")
-#        self.direction = raw_input("Running Direction(straight, left or right): ")
-#        self.speed_level = raw_input("Speed Level(fast or slow): ")
-        self.trial_num = raw_input("Trial Number(01,02,...): ")
-	self.filepath = '/home/keran/Documents/PSR_Trial_Data/fail/psr_'+posture+'_'+direction+'_'+speed+'_'+self.trial_num+'.txt'
+	def execute(self, userdata):
+		global psr_data
+		rospy.loginfo('Saving Data now!')
+		# Define file path
+		#self.spring_coeff = raw_input("Spring Coeffient: ")
+		#self.mount_pos = raw_input("Spring Mounting Position: ")
+		#self.fixed_posture = raw_input("Fixed Posture(upright or sprawl): ")
+		#self.direction = raw_input("Running Direction(straight, left or right): ")
+		#self.speed_level = raw_input("Speed Level(fast or slow): ")
+		self.trial_num = raw_input("Trial Number(01,02,...): ")
+		self.filepath = '/home/keranye/Documents/PSR_Trial_Data/test1/psr_'+posture+'_'+direction+'_'+speed+'_'+self.trial_num+'.txt'
 	
-	# Save data with csv
-	with open(self.filepath,'w') as csvf:
-		csv_writer = csv.writer(csvf)
-		csv_writer.writerows(userdata.psr_data_in)
+		# Save data with csv
+		with open(self.filepath,'w') as csvf:
+			csv_writer = csv.writer(csvf)
+			csv_writer.writerows(psr_data)
+		
+		psr_data = []
 
-	return 'GoToIdle'
-"""
+		return 'Done'
+
 #################################################################################################################
 
 def main():
 	rospy.init_node('psr_state_machine', anonymous=True)
 
-	# Create a SMACH state machine
+	# Create a SMACH state machine 'sm'
 	sm = smach.StateMachine(outcomes=['Exit'])
+	
+	# Local variables for sm
+	#sm.userdata.sm_psr_data = [1]
 
 	# Open the container sm
 	with sm:
@@ -165,12 +255,30 @@ def main():
 						    'ShutDown':'Exit'})		
 		
 		smach.StateMachine.add('INITIAL', Initial(), 
-				       transitions={'Go':'PSR_CLIENT', 
+				       transitions={'Go':'CON', 
 						    'Cancel':'IDLE'})
-        
-		smach.StateMachine.add('PSR_CLIENT', PSR_client(), 
-				       transitions={'Completed':'IDLE'})
 
+        	# Create a sub SMACH state machine 'sm_con'
+		sm_con = smach.Concurrence(outcomes=['Completed','Aborted'],
+					   default_outcome='Aborted',
+					   outcome_map={'Completed':
+								  { 'PSR_CLIENT':'Completed',
+								    'DATA_COLLECT':'Completed'}})		
+		#sm_con.userdata.sm_con_psr_data = [2]
+		# Add states to the container 'sm_con'
+		with sm_con:
+		
+			smach.Concurrence.add('PSR_CLIENT', PSR_client())
+			smach.Concurrence.add('DATA_COLLECT', Data_collect())
+
+		smach.StateMachine.add('CON', sm_con,
+					transitions={'Completed':'SAVE',
+						     'Aborted':'SAVE'})
+
+		# Add states to the container 'sm'
+		smach.StateMachine.add('SAVE', Save_Data(),
+				       transitions={'Done':'IDLE'})
+	
 	# Create and start the introspection server
 	sis = smach_ros.IntrospectionServer('server_psr', sm, '/SM_ROOT')
 	sis.start()
@@ -229,18 +337,18 @@ class Idle(smach.State):
 			self.psr_data = []
 
 		        # Get Trial date and time
-        		self.TrialTimeVel = []
-        		self.TrialTimeVel.append(str(datetime.datetime.now()))
+        		self.Test_Info = []
+        		self.Test_Info.append(str(datetime.datetime.now()))
 
        			# Get desired running time, linear and angular velocities(duty cycle)
-        		self.TrialTimeVel.append('Running Time: ')
-			self.TrialTimeVel.append(self.running_time)
-			self.TrialTimeVel.append('Linear Duty cycle: ')
-        		self.TrialTimeVel.append(self.linear_vel)
-			self.TrialTimeVel.append('Angular Duty cycle: ')
-        		self.TrialTimeVel.append(self.angular_vel)
+        		self.Test_Info.append('Running Time: ')
+			self.Test_Info.append(self.running_time)
+			self.Test_Info.append('Linear Duty cycle: ')
+        		self.Test_Info.append(self.linear_vel)
+			self.Test_Info.append('Angular Duty cycle: ')
+        		self.Test_Info.append(self.angular_vel)
 
-        		self.psr_data.append(self.TrialTimeVel)
+        		self.psr_data.append(self.Test_Info)
 			userdata.psr_data_out = self.psr_data
 
 			return 'GoToAccel'
@@ -440,13 +548,13 @@ class Waiting(smach.State):
 #	self.psr_data = []
 
 	# Get Trial date and time
-#       self.TrialTimeVel = []
-#        self.TrialTimeVel.append(str(datetime.datetime.now()))
+#       self.Test_Info = []
+#        self.Test_Info.append(str(datetime.datetime.now()))
 
 	# Get desired running time, linear and angular velocities(duty cycle)
-#	self.TrialTimeVel.append(userdata.running_time_in)
-#	self.TrialTimeVel.append(userdata.linear_vel_in)
-#	self.TrialTimeVel.append(userdata.angular_vel_in)
+#	self.Test_Info.append(userdata.running_time_in)
+#	self.Test_Info.append(userdata.linear_vel_in)
+#	self.Test_Info.append(userdata.angular_vel_in)
 
 #	self.psr_data.append('acceleration stop!!!')
 

@@ -8,9 +8,11 @@ def talker():
     rospy.init_node('psudo_sensors', anonymous=True)
     rate = rospy.Rate(100) # 100hz
     while not rospy.is_shutdown():
+	msg = Float32()
 	theta = 0
+	msg.data = theta	
         rospy.loginfo('Publishing theta = %f', theta)
-        pub.publish(theta)
+        pub.publish(msg)
         rate.sleep()
 
 if __name__ == '__main__':
