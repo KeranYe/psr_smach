@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <stdbool.h>
+#include <psr_smach/PSR_Drive.h>
 
 //using namespace std;
 
@@ -53,8 +54,9 @@ protected:
 	ros::Subscriber sub_;
 	ros::Publisher pub_;
 
-	geometry_msgs::Twist psr_msg;
-	
+	//geometry_msgs::Twist psr_msg;
+	psr_smach::PSR_Drive psr_msg;
+
 	boost::shared_ptr<const psr_smach::PSRGoal_<std::allocator<void> > > goal_;	
 	//struct Goal goal_;
 	struct State state_;
@@ -78,7 +80,7 @@ public:
 
 		//subscribe to the data topic of interest
 		sub_ = nh_.subscribe("/PSR/sensors", 1, &PSRAction::algorithmCB, this); // In topic /PSR/sensors, a self-defined msg type will be applied, namely psr_msgs.  For test, try std_msgs::FLoat32
-		pub_ = nh_.advertise<geometry_msgs::Twist>("/PSR/motors", 1);
+		pub_ = nh_.advertise<psr_smach::PSR_Drive>("/PSR/motors", 1);
 		ROS_INFO("Start Server!!!");
 		as_.start();
 		ROS_INFO("Server has been started!!!");
@@ -115,6 +117,7 @@ public:
 		// reset state variables
 		state_.linear_speed = goal_->linear_speed; // unit = m/s
 		state_.angular_speed = goal_->angular_speed; // unit = rad/s
+		state_.angular_acceleration_left = 0.0; // unit = rad/(s^2)		
 		state_.angular_acceleration_right = 0.0; // unit = rad/(s^2)
 		state_.angular_speed_left = 0.0; // unit = rad/s
 		state_.angular_speed_right = 0.0; // unit = rad/s
@@ -125,6 +128,19 @@ public:
 		initial_time = ros::WallTime::now().toSec();
 		current_time = initial_time;
 		elapsed_time = 0.0;
+		
+		// reset bbbl
+		psr_msg.id = "psr-01";
+		psr_msg.reset = true;		
+		psr_msg.theta_left_des = state_.wheel_angle_left;
+		psr_msg.theta_right_des = state_.wheel_angle_right;
+		psr_msg.omega_left_des = state_.angular_speed_left;
+		psr_msg.omega_right_des = state_.angular_speed_right;
+		psr_msg.alpha_left_des = state_.angular_acceleration_left;
+		psr_msg.alpha_right_des = state_.angular_acceleration_right;
+		psr_msg.duty_left_des = 0;
+		psr_msg.duty_right_des = 0;		
+		pub_.publish(psr_msg);
 	}
 
 	void preemptCB()
@@ -149,10 +165,22 @@ public:
 		state_.angular_speed_right = (1+(model_para_.width/(2.0*Rs)))*(goal_->linear_speed/model_para_.Rw);
 		
 		// Publish them
+/*
 		psr_msg.linear.x = state_.wheel_angle_left;
 		psr_msg.linear.y = state_.wheel_angle_right;
 		psr_msg.angular.x = state_.angular_speed_left;
 		psr_msg.angular.y = state_.angular_speed_right;
+*/
+		psr_msg.id = "psr-01";
+		psr_msg.reset = false;		
+		psr_msg.theta_left_des = state_.wheel_angle_left;
+		psr_msg.theta_right_des = state_.wheel_angle_right;
+		psr_msg.omega_left_des = state_.angular_speed_left;
+		psr_msg.omega_right_des = state_.angular_speed_right;
+		psr_msg.alpha_left_des = state_.angular_acceleration_left;
+		psr_msg.alpha_right_des = state_.angular_acceleration_right;
+		psr_msg.duty_left_des = 0;
+		psr_msg.duty_right_des = 0;		
 		pub_.publish(psr_msg);
 		
 		feedback_.current_time = elapsed_time;
@@ -170,8 +198,8 @@ public:
 			result_.angular_speed = state_.angular_speed;
 			result_.linear_speed = state_.linear_speed;
 			// Set speed to zeros
-			psr_msg.angular.x = 0.0;
-			psr_msg.angular.y = 0.0;
+			psr_msg.omega_left_des = 0.0;
+			psr_msg.omega_right_des = 0.0;
 			pub_.publish(psr_msg);
 
 			if(result_.completed == false){

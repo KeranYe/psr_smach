@@ -224,8 +224,9 @@ class Save_Data(smach.State):
 		#self.direction = raw_input("Running Direction(straight, left or right): ")
 		#self.speed_level = raw_input("Speed Level(fast or slow): ")
 		self.trial_num = raw_input("Trial Number(01,02,...): ")
-		self.filepath = '/home/keranye/Documents/PSR_Trial_Data/test1/psr_'+posture+'_'+direction+'_'+speed+'_'+self.trial_num+'.txt'
-	
+		#self.filepath = '/home/keranye/Documents/PSR_Trial_Data/test1/psr_'+posture+'_'+direction+'_'+speed+'_'+self.trial_num+'.txt' # path for minix
+		self.filepath = '/home/keran/Documents/PSR_Trial_Data/test_example/psr_'+posture+'_'+direction+'_'+speed+'_'+self.trial_num+'.txt' # path for CE-CERT NUC
+
 		# Save data with csv
 		with open(self.filepath,'w') as csvf:
 			csv_writer = csv.writer(csvf)
