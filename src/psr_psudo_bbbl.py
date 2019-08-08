@@ -3,7 +3,7 @@
 import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
-from psr_smach.msg import PSR_Drive
+from psr_msgs.msg import PSR_Drive
 
 def callback(psr_msg):
     #rospy.loginfo("id = %s, reset = %r", psr_msg.id, psr_msg.reset)

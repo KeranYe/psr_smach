@@ -3,12 +3,12 @@
 import rospy
 import math
 from std_msgs.msg import Float32
-from psr_smach.msg import PSR_Drive
+from psr_msgs.msg import PSR_Drive
 
 wheel_angle_left = 0
 wheel_angle_right = 0
-angular_speed_left = math.pi # rad/s
-angular_speed_right = math.pi # rad/s
+angular_speed_left = math.pi/2.0 # rad/s
+angular_speed_right = math.pi/2.0 # rad/s
 angular_acceleration_left = 0
 angular_acceleration_right = 0
 
@@ -20,7 +20,7 @@ def talker():
     while not rospy.is_shutdown():
 	psr_msg = PSR_Drive()
 	psr_msg.id = "psr-01"
-	psr_msg.reset = True		
+	psr_msg.reset = False		
 	psr_msg.theta_left_des = wheel_angle_left
 	psr_msg.theta_right_des = wheel_angle_right
 	psr_msg.omega_left_des = angular_speed_left

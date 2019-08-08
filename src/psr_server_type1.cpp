@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 #include <stdbool.h>
-#include <psr_smach/PSR_Drive.h>
+#include <psr_msgs/PSR_Drive.h>
 
 //using namespace std;
 
@@ -55,7 +55,7 @@ protected:
 	ros::Publisher pub_;
 
 	//geometry_msgs::Twist psr_msg;
-	psr_smach::PSR_Drive psr_msg;
+	psr_msgs::PSR_Drive psr_msg;
 
 	boost::shared_ptr<const psr_smach::PSRGoal_<std::allocator<void> > > goal_;	
 	//struct Goal goal_;
@@ -80,7 +80,7 @@ public:
 
 		//subscribe to the data topic of interest
 		sub_ = nh_.subscribe("/PSR/sensors", 1, &PSRAction::algorithmCB, this); // In topic /PSR/sensors, a self-defined msg type will be applied, namely psr_msgs.  For test, try std_msgs::FLoat32
-		pub_ = nh_.advertise<psr_smach::PSR_Drive>("/PSR/motors", 1);
+		pub_ = nh_.advertise<psr_msgs::PSR_Drive>("/PSR/motors", 1);
 		ROS_INFO("Start Server!!!");
 		as_.start();
 		ROS_INFO("Server has been started!!!");
