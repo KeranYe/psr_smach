@@ -6,17 +6,17 @@ from std_msgs.msg import Float32
 from psr_msgs.msg import PSR_Drive
 from psr_msgs.msg import Puppy_pos
 
-pos_front_left_upper = 0.0
-pos_front_left_lower = 0.0
+pos_front_left_upper = 1.0
+pos_front_left_lower = 0.5
 
 pos_rear_left_upper = 1.0
-pos_rear_left_lower = 1.5
+pos_rear_left_lower = 0.5
 
-pos_front_right_upper = 0.0
-pos_front_right_lower = 0.0
+pos_front_right_upper = -1.0
+pos_front_right_lower = -0.5
 
-pos_rear_right_upper = 0.0
-pos_rear_right_lower = 0.0
+pos_rear_right_upper = -1.0
+pos_rear_right_lower = -0.5
 
 counter = 0.0
 angle = 0.0
@@ -40,7 +40,7 @@ def talker():
     length = len(angle_list)
     pub = rospy.Publisher('/PUPPY/pos', Puppy_pos, queue_size=1)
     rospy.init_node('psudo_pos_controller', anonymous=True)
-    rate = rospy.Rate(50) # 50hz
+    rate = rospy.Rate(1) # 50hz
     counter = 0
     index = 0
     while not rospy.is_shutdown():
