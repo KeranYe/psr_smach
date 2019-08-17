@@ -4,61 +4,71 @@ import rospy
 import math
 from std_msgs.msg import Float32
 from psr_msgs.msg import PSR_Drive
+from psr_msgs.msg import Puppy_pos
 
-wheel_angle_left = 0
-wheel_angle_right = 0
-angular_speed_left = 0 # rad/s
-angular_speed_right = 0 # rad/s
-angular_acceleration_left = 0
-angular_acceleration_right = 0
+pos_front_left_upper = 0.0
+pos_front_left_lower = 0.0
+
+pos_rear_left_upper = 0.0
+pos_rear_left_lower = 0.0
+
+pos_front_right_upper = 0.0
+pos_front_right_lower = 0.0
+
+pos_rear_right_upper = 0.0
+pos_rear_right_lower = 0.0
+
 counter = 0.0
-
+angle = 0.0
 
 
 def talker():
-    global wheel_angle_left, wheel_angle_right, angular_speed_left, angular_speed_right, angular_acceleration_left, angular_acceleration_right, counter
-    pub = rospy.Publisher('/PSR/motors', PSR_Drive, queue_size=1)
-    rospy.init_node('psudo_vel_controller', anonymous=True)
-    rate = rospy.Rate(3) # 10hz
-    wheel_angle_left_init = math.pi/30.0# + math.pi/2
-    wheel_angle_right_init = math.pi/30.0
+    global pos_front_left_upper, pos_front_left_lower, pos_rear_left_upper, pos_rear_left_lower, pos_front_right_upper, pos_front_right_lower, pos_rear_right_upper, pos_rear_right_lower, counter, angle
+    pub = rospy.Publisher('/PUPPY/pos', Puppy_pos, queue_size=1)
+    rospy.init_node('psudo_pos_controller', anonymous=True)
+    rate = rospy.Rate(5) # 10hz
     counter = 0
     while not rospy.is_shutdown():
-	wheel_angle_left = wheel_angle_left_init + counter*math.pi/2
-	wheel_angle_right = wheel_angle_right_init + counter*math.pi/2
-	psr_msg = PSR_Drive()
-	psr_msg.id = "psr-01"
-	psr_msg.reset = False		
-	psr_msg.theta_left_des = wheel_angle_left
-	psr_msg.theta_right_des = wheel_angle_right
-	psr_msg.omega_left_des = angular_speed_left
-	psr_msg.omega_right_des = angular_speed_right
-	psr_msg.alpha_left_des = angular_acceleration_left
-	psr_msg.alpha_right_des = angular_acceleration_right
-	psr_msg.duty_left_des = -0.7
-	psr_msg.duty_right_des = 0.7
-        rospy.loginfo('Publishing')
-        pub.publish(psr_msg)
+
+	pos_front_left_upper = math.sin(angle)	
 	
-	rospy.loginfo('Publishing theta left = %f, theta right = %f', wheel_angle_left, wheel_angle_right)
-	counter = counter + 1
-	if counter > 3:
-		counter = 0.0
-        rate.sleep()
-    if rospy.is_shutdown():
-	psr_msg = PSR_Drive()
-	psr_msg.id = "psr-01"
-	psr_msg.reset = False		
-	psr_msg.theta_left_des = 0
-	psr_msg.theta_right_des = 0
-	psr_msg.omega_left_des = 0
-	psr_msg.omega_right_des = 0
-	psr_msg.alpha_left_des = 0
-	psr_msg.alpha_right_des = 0
-	psr_msg.duty_left_des = 0
-	psr_msg.duty_right_des = 0
+	puppy_msg = Puppy_pos()
+	puppy_msg.id = "puppy-01"
+	puppy_msg.reset = False		
+	puppy_msg.pos_front_left_upper_des = pos_front_left_upper
+	puppy_msg.pos_front_left_lower_des = pos_front_left_lower
+	puppy_msg.pos_rear_left_upper_des = pos_rear_left_upper
+	puppy_msg.pos_rear_left_lower_des = pos_rear_left_lower
+	puppy_msg.pos_front_right_upper_des = pos_front_right_upper
+	puppy_msg.pos_front_right_lower_des = pos_front_right_lower
+	puppy_msg.pos_rear_right_upper_des = pos_rear_right_upper
+	puppy_msg.pos_rear_right_lower_des = pos_rear_right_lower
+
         rospy.loginfo('Publishing')
-        pub.publish(psr_msg)
+        pub.publish(puppy_msg)
+		
+	angle = angle + math.pi/2.0	
+	counter = counter + 1
+	if counter > 4.0:
+		counter = 1.0
+		angle = math.pi/2.0
+        rate.sleep()
+
+    if rospy.is_shutdown():
+	puppy_msg = Puppy_pos()
+	puppy_msg.id = "puppy-01"
+	puppy_msg.reset = False		
+	puppy_msg.pos_front_left_upper_des = 0.0
+	puppy_msg.pos_front_left_lower_des = 0.0
+	puppy_msg.pos_rear_left_upper_des = 0.0
+	puppy_msg.pos_rear_left_lower_des = 0.0
+	puppy_msg.pos_front_right_upper_des = 0.0
+	puppy_msg.pos_front_right_lower_des = 0.0
+	puppy_msg.pos_rear_right_upper_des = 0.0
+	puppy_msg.pos_rear_right_lower_des = 0.0
+
+        rospy.loginfo('Shutting Down')
+        pub.publish(puppy_msg)
 
 if __name__ == '__main__':
     try:
